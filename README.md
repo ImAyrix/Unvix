@@ -54,7 +54,6 @@ No accounts · no telemetry · no server — everything stays in your browser.
 
 A scan of a real app can flag thirty endpoints at once. The list stays quiet: one
 hairline and one dot per new row, and the count written once.
-<img src="docs/screenshots/popup-many-new.png" width="300" align="right" alt="Thirty new endpoints in one scan">
 
 ## Why the list is as complete as it is
 
