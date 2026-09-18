@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="theme.css">
+  <title>Unvix</title>
+  <style>
+    /* Popup layout.
+       Rules of the house, learned the hard way:
+         - one number, one place. "4 new" lives on the status line and nowhere
+           else; it used to appear in the header, in every workspace heading and
+           on every row — a third time that is true by definition whenever the
+           NEW filter is on.
+         - the accent is a signal, not a surface: the new count, the toolbar
+           badge, one dot per new row. No fills, no pills.
+         - rows are a flat list with hairlines, not a bordered card each.
+         - nothing is shown twice, and a control that cannot do anything right
+           now (Acknowledge with nothing new) is not shown at all. */
+    body {
+      width: 420px;
+      height: 560px;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-app);
+    }
+
+    /* ---------- header: identity + actions ---------- */
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px 9px;
+      background-color: var(--bg-inset);
+    }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    /* The running build, so a stale unpacked copy is visible at a glance
+       instead of looking like a feature that does not work. */
+    .brand-version {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: .3px;
+      color: var(--text-dim);
+      text-transform: none;
+      margin-left: 1px;
+    }
+    .header-actions { display: flex; align-items: center; gap: 4px; }
+
+    .icon-btn {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius-xs);
+      display: flex;
+      align-items: center;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+    }
+    .icon-btn:hover { color: var(--text-main); background-color: var(--bg-surface-hover); border-color: var(--border-strong); }
+    .icon-btn.busy { color: var(--accent); border-color: var(--accent-line); }
+    .icon-btn.busy svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- status line: which page, how many, how many new ---------- */
+    .popup-status {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 14px 10px;
+      background-color: var(--bg-inset);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 10.5px;
+      color: var(--text-dim);
+    }
+    .status-host {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .status-counts { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; font-family: var(--font-mono); }
+    .count-new { color: var(--accent); font-weight: 600; }
+    .count-new::before { content: '· '; color: var(--text-dim); font-weight: 400; }
+
+    /* ---------- toolbar ---------- */
+    .popup-toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 14px;
+      background-color: var(--bg-app);
+      border-bottom: 1px solid var(--border-color);
+    }
+    /* one shared height so the search box and the NEW-only toggle line up */
+    .popup-toolbar input[type="search"],
+    .popup-toolbar .toggle {
+      height: 32px;
+      box-sizing: border-box;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin: 0;
+    }
+    .popup-toolbar input[type="search"] {
+      flex: 1;
+      min-width: 0;
+      padding-left: 11px;
+      padding-right: 11px;
+      font-size: 12px;
+    }
+    .popup-toolbar .toggle { padding-left: 10px; padding-right: 11px; font-size: 11px; }
+    /* The filter is on by default, so its "on" state cannot be a gold panel or
+       the popup opens looking alarmed. Neutral surface, gold checkbox. */
+    .popup-toolbar .toggle.on {
+      background: var(--bg-elevated);
+      border-color: var(--border-strong);
+      color: var(--text-main);
+    }
+
+    /* ---------- list ---------- */
+    .popup-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 0 18px;
+      background-color: var(--bg-app);
+    }
+
+    .target-group { margin-bottom: 14px; }
+    .target-group:last-child { margin-bottom: 4px; }
+
+    /* name on one line, the facts on the next: a heading squeezed into a single
+       line with a name, a marker and a count is where the clutter came from. */
+    .target-group h3 {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 3px 8px;
+      margin: 0;
+      padding: 9px 14px 7px;
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-app);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .grp-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: .1px;
+      color: var(--text-main);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .grp-meta {
+      flex-basis: 100%;
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+    /* the workspace you are on: said in words and by one hairline, never a fill */
+    .grp-here {
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: .9px;
+      text-transform: uppercase;
+    }
+    .target-group.is-here h3 { box-shadow: inset 2px 0 0 var(--accent-line); }
+
+    .endpoint-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 9px 14px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, .045);
+      transition: background-color .12s ease;
+    }
+    .endpoint-item:hover { background-color: var(--bg-surface-hover); }
+    /* One quiet edge per new row — and only when the list is not already
+       filtered to new rows, in which case every row is new and a marker on each
+       of them says nothing. */
+    .endpoint-item.is-new { box-shadow: inset 2px 0 0 var(--accent-line); }
+
+    .ep-body { min-width: 0; flex: 1; }
+    .ep-path { word-break: break-all; color: var(--text-main); }
+    .ep-src {
+      display: block;
+      margin-top: 4px;
+      font-size: 9.5px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ep-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      opacity: .85;
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+
+    /* Copy on hover or keyboard focus only: a button on every row is forty
+       buttons in a list that exists to be read. */
+    .ep-copy {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 3px 6px;
+      border-radius: var(--radius-xs);
+      font-size: 10px;
+      font-family: var(--font-sans);
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity .12s ease, color .15s ease, border-color .15s ease, background-color .15s ease;
+    }
+    .endpoint-item:hover .ep-copy,
+    .endpoint-item:focus-within .ep-copy,
+    .ep-copy:focus,
+    .ep-copy.done { opacity: 1; }
+    .ep-copy:hover { color: var(--text-main); border-color: var(--border-strong); background: var(--bg-base); }
+    .ep-copy.done { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+
+    /* ---------- the quiet lines ---------- */
+    .group-empty {
+      padding: 6px 14px 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* One message for the whole list, not one per workspace: when a search hides
+       everything, eight copies of "Nothing matches this filter" is the opposite
+       of help. */
+    .list-note {
+      margin: 20px 14px 0;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+    .list-note .hint { display: block; margin-top: 6px; font-size: 11px; color: var(--text-dim); }
+    .list-note .link-btn {
+      background: none;
+      border: 0;
+      padding: 0;
+      margin-top: 10px;
+      color: var(--accent);
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .list-note .link-btn:hover { color: var(--accent-bright); }
+
+    .empty-state { text-align: center; color: var(--text-muted); margin-top: 56px; padding: 0 14px; }
+    .empty-state svg { opacity: .16; margin-bottom: 14px; }
+    .empty-state p { font-size: 12.5px; margin: 0; line-height: 1.6; }
+    .empty-state .hint { margin-top: 10px; font-size: 11px; }
+    .empty-state .btn { margin-top: 16px; }
+
+    /* Told, not silent: when the page URL is unreadable the order is the stored
+       one, and that is worth one line rather than a puzzle. */
+    .scope-note {
+      margin: 12px 14px 0;
+      font-size: 10.5px;
+      line-height: 1.5;
+      color: var(--text-dim);
+      background: var(--bg-inset);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xs);
+      padding: 7px 9px;
+    }
+
+    /* ---------- footer ---------- */
+    .popup-footer {
+      padding: 11px 14px;
+      background-color: var(--bg-inset);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+    }
+    .btn-full { flex: 1; padding: 9px 12px; font-size: 12px; }
+    /* The footer is navigation, not a form: a solid gold "Dashboard" was the
+       loudest thing in the popup, for the least important decision in it. */
+    .popup-footer .btn { background: transparent; border-color: var(--border-color); color: var(--text-muted); }
+    .popup-footer .btn:hover { background: var(--bg-surface-hover); border-color: var(--border-strong); color: var(--text-main); }
+    .popup-footer .btn-strong { color: var(--text-main); border-color: var(--border-strong); }
+  </style>
+</head>
+<body>
+
+  <header class="popup-header">
+    <div class="brand-title">
+      <svg class="brand-mark" width="14" height="14" viewBox="0 0 128 128" aria-hidden="true" focusable="false">
+        <circle cx="54" cy="54" r="26" fill="none" stroke="currentColor" stroke-width="11"/>
+        <line x1="71" y1="71" x2="104" y2="104" stroke="currentColor" stroke-width="14" stroke-linecap="round"/>
+        <circle cx="54" cy="54" r="8" fill="currentColor"/>
+      </svg>
+      Unvix
+      <span id="brandVersion" class="brand-version"></span>
+    </div>
+    <div class="header-actions">
+      <button id="rescanPage" class="icon-btn" title="Rescan this page">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
+      <button id="openOptions" class="icon-btn" title="Open the dashboard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="popup-status" id="popupStatus">
+    <span class="status-host" id="statusHost">—</span>
+    <span class="status-counts">
+      <span id="statTotal">0 endpoints</span>
+      <span id="statNew" class="count-new" style="display:none">0 new</span>
+    </span>
+  </div>
+
+  <div class="popup-toolbar" id="popupToolbar">
+    <input type="search" id="epSearch" placeholder="Filter endpoints…" autocomplete="off"
+           title="Filter by path or source file (press / to focus)">
+    <!-- NEW only is on by default: opening the popup is about "what is new for
+         this page", and the full list is one click away. -->
+    <label class="toggle on" id="onlyNewToggle" title="Show only endpoints discovered since the last acknowledge">
+      <input type="checkbox" id="onlyNew" checked> NEW only
+    </label>
+  </div>
+
+  <main class="popup-content" id="findingsList"></main>
+
+  <footer class="popup-footer">
+    <button id="clearBadge" class="btn btn-secondary btn-full" title="Clear the NEW flags and the icon count">Acknowledge all</button>
+    <button id="openDashboard" class="btn btn-full btn-strong">Dashboard</button>
+  </footer>
+
+  <script src="page-scope.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

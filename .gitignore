@@ -1,0 +1,22 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Extension build artefacts
+*.zip
+*.crx
+*.pem
+*.key
+
+# Local environment
+node_modules/
+.env
+.env.*
+
+# Scratch copies of the extension (pre-edit snapshots, ReDoS/behaviour probes)
+.backup-*/
+tmp/
+scratch/
+
+# Screenshots you take yourself, if you prefer them outside docs/
+!/docs/screenshots/

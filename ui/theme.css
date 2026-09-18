@@ -1,0 +1,694 @@
+/* Unvix — theme
+ *
+ * One accent, used consistently: a warm gold (#e6b25c) instead of the old
+ * #4a9eff. Gold reads as "attention / newly found" on near-black without the
+ * cold, framework-default feel blue had, and it is the only accent in the
+ * palette — everything else is neutral, so the gold means something.
+ *
+ * No external font/asset requests: extension pages should not phone Google
+ * Fonts on every open (the previous @import both leaked a request and silently
+ * failed under the extension CSP, leaving mismatched metrics).
+ */
+
+:root {
+  /* surfaces: near-black, very slightly warm so the gold sits on it without glare */
+  --bg-app: #08080a;
+  --bg-base: #0b0b0d;
+  --bg-inset: #0e0e10;
+  --bg-surface: #121215;
+  --bg-surface-hover: #17171b;
+  --bg-elevated: #1a1a1f;
+
+  --border-color: #202026;
+  --border-strong: #2c2c34;
+
+  --text-main: #f2f1ee;
+  --text-muted: #9a9aa3;
+  --text-dim: #6a6a74;
+
+  /* the single accent */
+  --accent: #e6b25c;
+  --accent-bright: #f2c274;
+  --accent-ink: #201605;                 /* text on top of the accent */
+  --accent-soft: rgba(230, 178, 92, .12);
+  --accent-line: rgba(230, 178, 92, .38);
+  --accent-glow: rgba(230, 178, 92, .16);
+
+  --danger: #e5484d;
+  --danger-text: #ff8b8e;
+  --danger-soft: rgba(229, 72, 77, .1);
+  --danger-line: rgba(229, 72, 77, .32);
+
+  /* the NEW flag is the accent; the alias stays so older rules keep working */
+  --new: var(--accent);
+  --accent-invert: #0b0b0d;
+  --border-focus: var(--accent);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, .02), 0 10px 26px -20px rgba(0, 0, 0, .9);
+}
+
+* { scrollbar-width: thin; scrollbar-color: #2a2a31 transparent; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #26262c;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: #35353d; background-clip: content-box; }
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* Visible keyboard focus everywhere (the old sheet removed outlines with no
+   replacement, which made the dashboard unusable by keyboard). */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-glow);
+  border-radius: var(--radius-xs);
+}
+
+::selection { background: var(--accent-line); color: #fff; }
+
+/* ---------- Dashboard layout ---------- */
+
+.dashboard { display: flex; height: 100vh; }
+
+.sidebar {
+  width: 238px;
+  flex-shrink: 0;
+  background-color: var(--bg-inset);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  padding: 22px 20px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 10px;
+  gap: 2px;
+}
+
+.nav-item {
+  padding: 10px 12px;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+  font-weight: 550;
+  font-size: 13px;
+  border-left: 2px solid transparent;
+}
+.nav-item:hover { background-color: var(--bg-surface-hover); color: var(--text-main); }
+.nav-item.active {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-main);
+  border-left-color: var(--accent);
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  padding: 13px 20px;
+  border-top: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.main-content {
+  flex: 1;
+  padding: 34px 44px 72px;
+  overflow-y: auto;
+  /* one very soft gold wash top-right: at .04 it is barely perceptible, but it
+     stops the large empty areas from reading as dead black */
+  background:
+    radial-gradient(900px 420px at 100% 0%, rgba(230, 178, 92, .04), transparent 62%),
+    var(--bg-app);
+}
+
+/* A fixed, centred column: at 1440px the old 900px block hugged the sidebar and
+   left a dead right half, which is what made the pages read as unfinished. */
+.view-section { display: none; max-width: 860px; margin: 0 auto; }
+.view-section.active { display: block; animation: fadeIn .22s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h2 {
+  font-weight: 600;
+  font-size: 19px;
+  margin: 0 0 6px;
+  letter-spacing: -.2px;
+}
+
+.subtitle { color: var(--text-muted); font-size: 12.5px; margin: 0 0 26px; line-height: 1.55; }
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.section-header .subtitle { margin-bottom: 0; }
+
+/* ---------- Forms ---------- */
+
+.form-group { margin-bottom: 20px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-group > label { margin-top: 0; }
+
+label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 650;
+}
+label.inline { margin-bottom: 0; }
+
+input, textarea, select {
+  width: 100%;
+  background-color: var(--bg-base);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  box-sizing: border-box;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+input::placeholder, textarea::placeholder { color: var(--text-dim); }
+input:hover, textarea:hover, select:hover { border-color: var(--border-strong); }
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+textarea { resize: vertical; min-height: 118px; line-height: 1.6; }
+select { cursor: pointer; }
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  background-color: var(--accent);
+  color: var(--accent-ink);
+  border: 1px solid var(--accent);
+  padding: 10px 20px;
+  font-size: 12.5px;
+  font-weight: 650;
+  font-family: inherit;
+  letter-spacing: .2px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, transform .06s ease;
+}
+.btn:hover { background-color: var(--accent-bright); border-color: var(--accent-bright); }
+.btn:active { transform: translateY(1px); }
+
+.btn-sm { padding: 6px 12px; font-size: 11.5px; font-weight: 600; border-radius: var(--radius-xs); }
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-strong);
+}
+.btn-secondary:hover { background-color: var(--bg-surface-hover); border-color: #3a3a44; }
+
+.btn-danger { background-color: var(--danger-soft); color: var(--danger-text); border: 1px solid var(--danger-line); }
+.btn-danger:hover { background-color: var(--danger); color: #fff; border-color: var(--danger); }
+
+/* ---------- Cards ---------- */
+
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 14px;
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 17px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+.card-head.plain { border-bottom: 0; padding-bottom: 0; }
+.card-title { font-size: 13px; font-weight: 650; letter-spacing: .1px; }
+.card-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; line-height: 1.55; max-width: 48ch; }
+.card-body { padding: 4px 20px 18px; }
+.card-body.flush { padding: 18px 20px; }
+.card--danger { border-color: var(--danger-line); }
+.card--danger .card-title { color: var(--danger-text); }
+.card-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+/* A settings row: description on the left, control on the right, one baseline. */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.row:first-child { padding-top: 14px; }
+.row:last-child { border-bottom: 0; padding-bottom: 6px; }
+.row-label { font-size: 13px; font-weight: 550; }
+.row-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; max-width: 46ch; }
+.row-control { display: flex; align-items: center; gap: 8px; flex-shrink: 0; position: relative; }
+
+/* Compact numeric field + unit select: one height, one baseline, one border. */
+.field-inline {
+  display: flex;
+  align-items: stretch;
+  height: 38px;
+  background-color: var(--bg-base);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.field-inline:hover { border-color: var(--border-strong); }
+.field-inline:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.field-inline input,
+.field-inline select {
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 12.5px;
+  padding: 0 12px;
+}
+.field-inline input { width: 76px; text-align: right; }
+.field-inline input:focus, .field-inline select:focus { box-shadow: none; border: 0; }
+.field-inline select {
+  width: auto;
+  padding: 0 30px 0 12px;
+  border-left: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+/* The confirmation must not take layout space: in flow it reserved ~51px to the
+   right of the Save button, which pushed that button 59px left of the right edge
+   that every other card's actions line up on. It now sits in the gap, to the
+   left of the control cluster. */
+.save-status {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+  font-size: 11.5px;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.save-status.show { opacity: 1; }
+
+/* ---------- Workspace cards ---------- */
+
+.target-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color .15s ease;
+}
+.target-card:hover { border-color: var(--border-strong); }
+
+.target-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+
+.target-info h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+.target-info p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+}
+.pill-new { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); }
+/* Per-row NEW tag: one quiet word with a dot of colour. The filled pill is kept
+   for the summaries (a workspace's "3 new"), where one per screen is a signal
+   rather than noise. */
+.pill-new-quiet {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pill-new-quiet::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .85;
+}
+.pill-count { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border-color); }
+
+/* ---------- Workspace details & tabs ---------- */
+
+.target-details {
+  margin-top: 16px;
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.target-tabs { display: flex; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color); }
+
+.target-tab {
+  flex: 1;
+  padding: 11px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 550;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .15s ease, background-color .15s ease;
+}
+.target-tab:hover { color: var(--text-main); background-color: var(--bg-surface-hover); }
+.target-tab.active { color: var(--text-main); border-bottom-color: var(--accent); background-color: var(--bg-inset); }
+
+.target-tab-content { display: none; padding: 18px; }
+.target-tab-content.active { display: block; }
+
+/* ---------- Endpoint rows ---------- */
+
+.endpoint-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px;
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  margin-bottom: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.endpoint-row:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
+/* See ui/popup.html: the accent marks a new row with one quiet edge, and the
+   per-row tag is left as plain text. Gold belongs to the counts. */
+.endpoint-row.is-new { border-left: 2px solid var(--accent-line); }
+
+.endpoint-main { display: flex; flex-direction: column; gap: 5px; overflow: hidden; min-width: 0; flex: 1 1 auto; }
+
+.endpoint-path { word-break: break-all; color: var(--text-main); }
+
+.endpoint-source {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.endpoint-source a { color: var(--text-dim); text-decoration: none; transition: color .15s ease; }
+.endpoint-source a:hover { color: var(--accent); text-decoration: underline; }
+
+.endpoint-actions { display: flex; gap: 6px; flex-shrink: 0; }
+/* Every row has a Delete; a wall of red outlines reads as noise, so the row
+   delete is neutral until you point at it. The danger-zone button keeps the
+   red, where it is the point of the section. */
+.endpoint-actions .btn-danger {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+.endpoint-actions .btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+/* The inline editor replaces the path inside the row. `.endpoint-main` used to
+   shrink-wrap its content, so the path cell was ~170px and a 70% input inside it
+   was 120px wide — unusable for a real endpoint path. The cell now fills the row
+   (flex above) and the editor takes the whole cell. */
+.inline-edit-input {
+  background: var(--bg-base);
+  border: 1px solid var(--accent);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  padding: 7px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  width: 100%;
+  min-width: 0;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.endpoint-row.is-editing .endpoint-path { flex: 1 1 auto; min-width: 0; }
+
+/* ---------- Filters / toolbar ---------- */
+
+.endpoint-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  background: var(--bg-inset);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Direct children only. `.endpoint-toolbar input` also matched the checkbox that
+   lives *inside* the .toggle label, giving it flex-basis 160px / min-width 140px
+   and the shared 38px height: the label then measured 247px and shoved the Copy
+   button and the count onto extra rows. */
+.endpoint-toolbar > input { flex: 1 1 160px; margin: 0; min-width: 140px; }
+
+/* Every control in the filter bar shares one height, otherwise the search box,
+   the source select, the NEW-only toggle and the Copy button each end up a
+   different size and their tops do not line up. */
+.endpoint-toolbar > input,
+.endpoint-toolbar > select,
+.endpoint-toolbar .toggle,
+.endpoint-toolbar .btn {
+  height: 38px;
+  box-sizing: border-box;
+  padding-top: 0;
+  padding-bottom: 0;
+  /* the .toggle is a <label> and inherits margin-bottom: 8px from the base
+     label rule; with align-items:center that shifted it 4px above the row. */
+  margin: 0;
+}
+.endpoint-toolbar > input,
+.endpoint-toolbar > select { padding-left: 12px; padding-right: 12px; }
+
+.endpoint-toolbar .toggle {
+  gap: 7px;
+  padding-left: 12px;
+  padding-right: 12px;
+  font-size: 12px;
+}
+/* …and the checkbox itself stays a checkbox. */
+.endpoint-toolbar .toggle input {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+}
+
+.endpoint-toolbar .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 16px;
+  padding-right: 16px;
+  font-size: 12px;
+}
+
+.endpoint-toolbar select {
+  background-color: var(--bg-base);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  /* width:100% from the base select rule made this claim a whole row of the
+     wrapped filter bar, so the source filter sat alone under the search box */
+  width: auto;
+  flex: 0 1 190px;
+  min-width: 150px;
+  transition: border-color .15s ease;
+}
+.endpoint-toolbar select:focus { border-color: var(--accent); }
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  padding: 7px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-base);
+  white-space: nowrap;
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.toggle:hover { color: var(--text-main); border-color: var(--border-strong); }
+.toggle input { width: auto; margin: 0; accent-color: var(--accent); }
+.toggle.on { color: var(--text-main); border-color: var(--accent-line); background: var(--accent-soft); }
+
+.toolbar-count {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: auto;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+.empty-msg {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-style: italic;
+  text-align: center;
+  margin-top: 22px;
+}
+
+.hint { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.55; }
+.hint code, .row-hint code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+/* "one per line" style suffix on a field label */
+.label-note {
+  text-transform: none;
+  letter-spacing: .2px;
+  font-weight: 500;
+  color: var(--text-dim);
+  font-size: 10.5px;
+  margin-left: 2px;
+}
+/* a button plus its caption, on one baseline */
+/* The exclude-rule status: quiet when it is fine, loud when a pattern will not
+   compile (the scanner skips those, so silence would be a lie). */
+.rule-status { font-family: var(--font-mono); font-size: 10.5px; }
+.rule-status.bad { color: var(--danger-text); }
+
+.hint-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.hint-row .hint { margin-top: 0; }
+
+/* ---------- Transient confirmation ---------- */
+
+.toast {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent-line);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 14px 40px -20px #000;
+  color: var(--text-main);
+  font-size: 12.5px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast .toast-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }

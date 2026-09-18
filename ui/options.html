@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="theme.css">
+  <title>Unvix | Dashboard</title>
+</head>
+<body>
+  <div class="dashboard">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <svg class="brand-mark" width="14" height="14" viewBox="0 0 128 128" aria-hidden="true" focusable="false">
+        <circle cx="54" cy="54" r="26" fill="none" stroke="currentColor" stroke-width="11"/>
+        <line x1="71" y1="71" x2="104" y2="104" stroke="currentColor" stroke-width="14" stroke-linecap="round"/>
+        <circle cx="54" cy="54" r="8" fill="currentColor"/>
+      </svg>
+        Unvix
+      </div>
+      <div class="nav-menu" role="tablist">
+        <div class="nav-item active" role="tab" tabindex="0" data-target="view-add">New Workspace</div>
+        <div class="nav-item" role="tab" tabindex="0" data-target="view-manage">Workspaces</div>
+        <div class="nav-item" role="tab" tabindex="0" data-target="view-settings">Preferences</div>
+      </div>
+      <div class="sidebar-foot">
+        <span>Unvix</span>
+        <span id="appVersion"></span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+
+      <section id="view-add" class="view-section active">
+        <h2>Create Workspace</h2>
+        <p class="subtitle">A workspace is a set of scopes plus the rules that run on the JavaScript of every page inside them.</p>
+
+        <div class="card">
+          <div class="card-body flush">
+            <div class="form-group">
+              <label for="targetName">Workspace Name</label>
+              <input type="text" id="targetName" placeholder="e.g., Example Bug Bounty">
+            </div>
+
+            <div class="form-group">
+              <label for="targetScopes">Domain Scopes <span class="label-note">one per line</span></label>
+              <textarea id="targetScopes" placeholder="example.tld&#10;*.example.tld&#10;example"></textarea>
+              <p class="hint"><code>*</code> matches anything, so <code>*.example.tld</code> covers every subdomain. Every workspace whose scope matches a page receives that page's findings, so overlapping workspaces both fill.</p>
+            </div>
+
+            <div class="form-group">
+              <label for="targetRegex">Extraction Rules <span class="label-note">one per line</span></label>
+              <textarea id="targetRegex" placeholder="Paste the starter rules with the button below, or write your own."></textarea>
+              <div class="hint-row">
+                <button type="button" class="btn btn-secondary btn-sm" id="insertPackBtn">Insert Starter Rules</button>
+                <span class="hint" id="packCaption"></span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="targetExcludes">Exclude Rules <span class="label-note">optional · one per line</span></label>
+              <textarea id="targetExcludes" placeholder="One pattern per line, e.g. ^/api/internal/"></textarea>
+              <p class="hint">
+                <strong>Out of scope:</strong> an endpoint matching any of these is ignored — never stored,
+                never counted as new. Matching is case-insensitive and runs against the whole path, so
+                <code>^/api/internal/</code> anchors the start, <code>\.map$</code> the end.
+                A pattern that does not compile is reported below and skipped by the scanner.
+                The box starts empty: <strong>Insert Default Rules</strong> adds the twelve-rule noise
+                filter (images, stylesheets, fonts, source maps, static bundles, vendor paths).
+              </p>
+              <div class="hint-row">
+                <button type="button" class="btn btn-secondary btn-sm" id="insertExcludePackBtn">Insert Default Rules</button>
+                <span class="hint rule-status" id="createExcludeStatus"></span>
+              </div>
+            </div>
+
+            <button class="btn" id="saveBtn">Deploy Workspace</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-manage" class="view-section">
+        <div class="section-header">
+          <div>
+            <h2>Active Workspaces</h2>
+            <p class="subtitle">Open a workspace to edit its rules or manage the endpoints it captured.</p>
+          </div>
+          <div class="card-actions">
+            <input type="file" id="workspaceImportFile" style="display:none" accept=".json">
+            <button class="btn btn-secondary btn-sm" id="importWorkspaceBtn">Import Workspace</button>
+          </div>
+        </div>
+
+        <div id="targetList">
+          <!-- Workspaces populated by JS -->
+        </div>
+      </section>
+
+      <section id="view-settings" class="view-section">
+        <h2>Global Preferences</h2>
+        <p class="subtitle">These apply to every workspace.</p>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Scanning</div>
+              <div class="card-desc">How aggressively scripts are re-fetched while you browse.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div>
+                <div class="row-label">Cache cooldown</div>
+                <div class="row-hint">A script URL is not fetched again until this much time has passed, so unchanged bundles are not re-scanned on every page load. Larger is quieter; smaller notices new endpoints sooner.</div>
+              </div>
+              <div class="row-control">
+                <span class="field-inline">
+                  <input type="number" id="cacheCooldown" min="1" max="10080" value="60" inputmode="numeric">
+                  <select id="cacheCooldownUnit" aria-label="Cache cooldown unit">
+                    <option value="1">min</option>
+                    <option value="60">h</option>
+                    <option value="1440">d</option>
+                  </select>
+                </span>
+                <button class="btn btn-sm" id="saveSettingsBtn">Save</button>
+                <span class="save-status" id="settingsSaved">Saved</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Backup &amp; Restore</div>
+              <div class="card-desc">Everything Unvix stores — preferences, workspaces and every finding — in a single JSON file.</div>
+            </div>
+            <div class="card-actions">
+              <input type="file" id="globalImportFile" style="display:none" accept=".json">
+              <button class="btn btn-secondary btn-sm" id="importGlobalBtn">Import All</button>
+              <button class="btn btn-sm" id="exportGlobalBtn">Export All</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--danger">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Danger Zone</div>
+              <div class="card-desc">Deletes every discovered endpoint and the script cache. Workspaces and their rules are kept.</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-danger btn-sm" id="clearDataBtn">Purge Findings</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="regex-pack.js"></script>
+  <script src="exclude-pack.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
