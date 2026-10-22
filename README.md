@@ -4,7 +4,7 @@
 
 **Unveil new endpoints. Discover new features.**
 
-A Chrome extension for passive JavaScript recon: it reads the scripts a site
+A browser extension for passive JavaScript recon: it reads the scripts a site
 already loads, extracts the API endpoints and routes out of them with rules you
 control, and marks anything new on your next visit.
 
@@ -16,10 +16,17 @@ No accounts · no telemetry · no server — everything stays in your browser.
 
 ## Install
 
+### Chrome & Chromium
 1. Clone this repository.
 2. `chrome://extensions` → **Developer mode** → **Load unpacked** → this folder.
 3. Refresh the tabs you already had open. Chrome invalidates the content scripts
    of open tabs; that is true of every MV3 extension.
+
+### Firefox
+1. Clone this repository.
+2. In Firefox, open `about:debugging#/runtime/this-firefox`.
+3. Click **Load Temporary Add-on...** → select `firefox/manifest.json`.
+4. For packaging or permanent loading, see [`firefox/README.md`](firefox/README.md).
 
 ## Quick start
 
@@ -143,6 +150,7 @@ ui/theme.css           shared dark theme (no remote fonts or assets)
 ui/page-scope.js       scope matching + "current page first" ordering for the popup
 ui/options.{html,js}   workspaces, rules, filters, settings, import/export
 ui/popup.{html,js}     findings list, NEW-only filter, rescan, acknowledge
+firefox/               Firefox MV3 version (background event script, gecko ID, options_ui)
 docs/                  screenshots and the social preview card
 ```
 
